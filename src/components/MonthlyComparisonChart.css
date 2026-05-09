@@ -110,11 +110,27 @@
 }
 
 .monthly-comparison-summary-card.income strong {
-  color: #1d5fc1;
+  color: #16a34a;
 }
 
 .monthly-comparison-summary-card.expense strong {
-  color: #c15321;
+  color: #dc2626;
+}
+
+.monthly-comparison-summary-card.savings strong {
+  color: #15803d;
+}
+
+.monthly-comparison-summary-card.savings.negative strong {
+  color: #b91c1c;
+}
+
+.monthly-comparison-summary-card small {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .monthly-comparison-chart-wrap {

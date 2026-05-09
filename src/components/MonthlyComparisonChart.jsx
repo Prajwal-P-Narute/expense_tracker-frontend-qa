@@ -29,6 +29,11 @@ const compactCurrencyFormatter = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 1,
 });
 
+const percentFormatter = new Intl.NumberFormat("en-IN", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
 const monthLabelFormatter = new Intl.DateTimeFormat("en-IN", {
   month: "short",
   year: "numeric",
@@ -44,12 +49,12 @@ const shortMonthYearFormatter = new Intl.DateTimeFormat("en-IN", {
 });
 
 const CHART_COLORS = {
-  income: "#4c8eda",
-  expense: "#df7846",
-  incomePositive: "#1d5fc1",
-  incomeNegative: "#e4572e",
-  expensePositive: "#c15321",
-  expenseNegative: "#138a72",
+  income: "#16a34a",
+  expense: "#dc2626",
+  savingsPositive: "#15803d",
+  savingsNegative: "#b91c1c",
+  labelBackground: "rgba(255, 255, 255, 0.96)",
+  labelBorder: "rgba(148, 163, 184, 0.24)",
 };
 
 const formatCurrency = (value) =>
@@ -57,6 +62,49 @@ const formatCurrency = (value) =>
 
 const formatAxisCurrency = (value) =>
   `₹${compactCurrencyFormatter.format(Number(value) || 0)}`;
+
+const formatCompactCurrency = (value) =>
+  `₹${compactCurrencyFormatter.format(Math.abs(Number(value) || 0))}`;
+
+const formatSignedCurrency = (value) => {
+  const amount = Number(value) || 0;
+  const prefix = amount < 0 ? "-₹" : "₹";
+  return `${prefix}${currencyFormatter.format(Math.abs(amount))}`;
+};
+
+const formatSavingsRate = (value) => {
+  const numericValue = Number(value) || 0;
+  const prefix = numericValue > 0 ? "+" : "";
+  return `${prefix}${percentFormatter.format(numericValue)}%`;
+};
+
+const calculateSavingsRate = (income, expense) => {
+  const safeIncome = Number(income) || 0;
+  const safeExpense = Number(expense) || 0;
+  const savings = safeIncome - safeExpense;
+
+  if (safeIncome > 0) {
+    return (savings / safeIncome) * 100;
+  }
+
+  return savings === 0 ? 0 : -100;
+};
+
+const drawRoundedRect = (ctx, x, y, width, height, radius) => {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+
+  ctx.beginPath();
+  ctx.moveTo(x + safeRadius, y);
+  ctx.lineTo(x + width - safeRadius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  ctx.lineTo(x + width, y + height - safeRadius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
+  ctx.lineTo(x + safeRadius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  ctx.lineTo(x, y + safeRadius);
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y);
+  ctx.closePath();
+};
 
 const getMonthKeyFromDate = (date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -108,42 +156,6 @@ const buildMonthRange = (fromKey, toKey) => {
   }
 
   return months;
-};
-
-const buildChangeLabel = (currentValue, previousValue, datasetKey) => {
-  if (!Number.isFinite(previousValue)) {
-    return null;
-  }
-
-  if (previousValue === 0) {
-    if (currentValue === 0) {
-      return null;
-    }
-
-    return {
-      text: "+100.0%",
-      color:
-        datasetKey === "expense"
-          ? CHART_COLORS.expensePositive
-          : CHART_COLORS.incomePositive,
-    };
-  }
-
-  const change = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
-  const rounded = Number(change.toFixed(1));
-  const prefix = rounded > 0 ? "+" : "";
-
-  return {
-    text: `${prefix}${rounded.toFixed(1)}%`,
-    color:
-      datasetKey === "expense"
-        ? rounded <= 0
-          ? CHART_COLORS.expenseNegative
-          : CHART_COLORS.expensePositive
-        : rounded >= 0
-          ? CHART_COLORS.incomePositive
-          : CHART_COLORS.incomeNegative,
-  };
 };
 
 export default function MonthlyComparisonChart({
@@ -253,24 +265,17 @@ export default function MonthlyComparisonChart({
   const chartRows = useMemo(() => {
     return selectedMonthKeys.map((monthKey) => {
       const point = normalizedSeries.get(monthKey);
-      const previousMonthPoint = normalizedSeries.get(shiftMonthKey(monthKey, -1));
       const income = point?.income || 0;
       const expense = point?.expense || 0;
+      const savings = income - expense;
+      const savingsRate = calculateSavingsRate(income, expense);
 
       return {
         monthKey,
         income,
         expense,
-        incomeChange: buildChangeLabel(
-          income,
-          previousMonthPoint?.income,
-          "income",
-        ),
-        expenseChange: buildChangeLabel(
-          expense,
-          previousMonthPoint?.expense,
-          "expense",
-        ),
+        savings,
+        savingsRate,
       };
     });
   }, [normalizedSeries, selectedMonthKeys]);
@@ -282,8 +287,8 @@ export default function MonthlyComparisonChart({
 
   const chartStageWidth = useMemo(() => {
     const monthCount = Math.max(selectedMonthKeys.length, 6);
-    const slotWidth = isCompactViewport ? 104 : 88;
-    const minimumWidth = isCompactViewport ? 640 : 0;
+    const slotWidth = isCompactViewport ? 128 : 96;
+    const minimumWidth = isCompactViewport ? 720 : 0;
 
     return Math.max(monthCount * slotWidth, minimumWidth);
   }, [isCompactViewport, selectedMonthKeys.length]);
@@ -303,25 +308,26 @@ export default function MonthlyComparisonChart({
     const chart = new Chart(canvasRef.current, {
       type: "bar",
       data: {
-        labels: chartRows.map((row) =>
+        labels: chartRows.map((row) => [
           hasMultipleYears
             ? shortMonthYearFormatter.format(parseMonthKey(row.monthKey))
             : formatMonthLabel(row.monthKey, false),
-        ),
+          formatSavingsRate(row.savingsRate),
+        ]),
         datasets: [
           {
             label: "Income",
             data: chartRows.map((row) => row.income),
             backgroundColor: CHART_COLORS.income,
             borderRadius: 10,
-            maxBarThickness: isCompactViewport ? 26 : 32,
+            maxBarThickness: isCompactViewport ? 24 : 30,
           },
           {
-            label: "Expenses",
+            label: "Expense",
             data: chartRows.map((row) => row.expense),
             backgroundColor: CHART_COLORS.expense,
             borderRadius: 10,
-            maxBarThickness: isCompactViewport ? 26 : 32,
+            maxBarThickness: isCompactViewport ? 24 : 30,
           },
         ],
       },
@@ -337,8 +343,8 @@ export default function MonthlyComparisonChart({
         },
         layout: {
           padding: {
-            top: isCompactViewport ? 28 : 34,
-            right: isCompactViewport ? 22 : 16,
+            top: isCompactViewport ? 32 : 40,
+            right: isCompactViewport ? 20 : 16,
             left: isCompactViewport ? 4 : 0,
           },
         },
@@ -365,6 +371,12 @@ export default function MonthlyComparisonChart({
               },
               label: (context) =>
                 `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`,
+              footer: (items) => {
+                const row = chartRows[items[0]?.dataIndex ?? 0];
+                return row
+                  ? `Savings: ${formatSignedCurrency(row.savings)} (${formatSavingsRate(row.savingsRate)})`
+                  : "";
+              },
             },
           },
         },
@@ -378,9 +390,9 @@ export default function MonthlyComparisonChart({
               autoSkip: false,
               maxRotation: 0,
               minRotation: 0,
-              padding: isCompactViewport ? 8 : 6,
+              padding: isCompactViewport ? 10 : 8,
               font: {
-                size: isCompactViewport ? 11 : 12,
+                size: isCompactViewport ? 10 : 11,
                 weight: "600",
               },
             },
@@ -409,40 +421,109 @@ export default function MonthlyComparisonChart({
       },
       plugins: [
         {
-          id: "monthly-comparison-change-labels",
+          id: "monthly-comparison-metrics",
           afterDatasetsDraw(chartInstance) {
             const { ctx, chartArea } = chartInstance;
+            const incomeMeta = chartInstance.getDatasetMeta(0);
+            const expenseMeta = chartInstance.getDatasetMeta(1);
+
+            const drawBadge = (text, centerX, topY, options = {}) => {
+              const {
+                textColor = "#23335b",
+                fontSize = 11,
+                fontWeight = "700",
+                paddingX = 7,
+                paddingY = 4,
+                radius = 10,
+                minTop = chartArea.top + 4,
+              } = options;
+
+              ctx.save();
+              ctx.font = `${fontWeight} ${fontSize}px "Segoe UI", sans-serif`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+
+              const textWidth = ctx.measureText(text).width;
+              const badgeWidth = textWidth + paddingX * 2;
+              const badgeHeight = fontSize + paddingY * 2 + 2;
+              const safeLeft = Math.min(
+                Math.max(centerX - badgeWidth / 2, chartArea.left + 4),
+                chartArea.right - badgeWidth - 4,
+              );
+              const safeTop = Math.max(topY, minTop);
+
+              drawRoundedRect(
+                ctx,
+                safeLeft,
+                safeTop,
+                badgeWidth,
+                badgeHeight,
+                radius,
+              );
+              ctx.fillStyle = CHART_COLORS.labelBackground;
+              ctx.fill();
+              ctx.strokeStyle = CHART_COLORS.labelBorder;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+
+              ctx.fillStyle = textColor;
+              ctx.fillText(
+                text,
+                safeLeft + badgeWidth / 2,
+                safeTop + badgeHeight / 2,
+              );
+              ctx.restore();
+
+              return {
+                top: safeTop,
+                height: badgeHeight,
+              };
+            };
+
             ctx.save();
-            ctx.font = `600 ${isCompactViewport ? 11 : 12}px "Segoe UI", sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
 
-            chartInstance.data.datasets.forEach((dataset, datasetIndex) => {
-              const meta = chartInstance.getDatasetMeta(datasetIndex);
+            chartRows.forEach((row, index) => {
+              const incomeBar = incomeMeta.data[index];
+              const expenseBar = expenseMeta.data[index];
 
-              meta.data.forEach((bar, index) => {
-                const changeInfo =
-                  datasetIndex === 0
-                    ? chartRows[index]?.incomeChange
-                    : chartRows[index]?.expenseChange;
+              if (!incomeBar || !expenseBar) {
+                return;
+              }
 
-                if (!changeInfo?.text) {
-                  return;
-                }
+              const incomePoint = incomeBar.tooltipPosition();
+              const expensePoint = expenseBar.tooltipPosition();
 
-                const tooltipPosition = bar.tooltipPosition();
-                const safeX = Math.min(
-                  Math.max(tooltipPosition.x, chartArea.left + 24),
-                  chartArea.right - 24,
+              if (row.income > 0) {
+                drawBadge(
+                  formatCompactCurrency(row.income),
+                  incomePoint.x,
+                  incomePoint.y - (isCompactViewport ? 26 : 28),
+                  {
+                    textColor: CHART_COLORS.income,
+                    fontSize: isCompactViewport ? 10 : 11,
+                    paddingX: 6,
+                    paddingY: 3,
+                    radius: 9,
+                    minTop: chartArea.top - (isCompactViewport ? 10 : 12),
+                  },
                 );
-                const safeY = Math.max(
-                  tooltipPosition.y - (isCompactViewport ? 6 : 8),
-                  chartArea.top + 14,
-                );
+              }
 
-                ctx.fillStyle = changeInfo.color;
-                ctx.fillText(changeInfo.text, safeX, safeY);
-              });
+              if (row.expense > 0) {
+                drawBadge(
+                  formatCompactCurrency(row.expense),
+                  expensePoint.x,
+                  expensePoint.y - (isCompactViewport ? 26 : 28),
+                  {
+                    textColor: CHART_COLORS.expense,
+                    fontSize: isCompactViewport ? 10 : 11,
+                    paddingX: 6,
+                    paddingY: 3,
+                    radius: 9,
+                    minTop: chartArea.top - (isCompactViewport ? 10 : 12),
+                  },
+                );
+              }
             });
 
             ctx.restore();
@@ -469,6 +550,16 @@ export default function MonthlyComparisonChart({
     [chartRows],
   );
 
+  const selectedSavingsTotal = useMemo(
+    () => selectedIncomeTotal - selectedExpenseTotal,
+    [selectedExpenseTotal, selectedIncomeTotal],
+  );
+
+  const selectedSavingsRate = useMemo(
+    () => calculateSavingsRate(selectedIncomeTotal, selectedExpenseTotal),
+    [selectedExpenseTotal, selectedIncomeTotal],
+  );
+
   const handleFromMonthChange = (event) => {
     const nextFromMonthKey = event.target.value;
     setFromMonthKey(nextFromMonthKey);
@@ -491,9 +582,9 @@ export default function MonthlyComparisonChart({
     return (
       <section className="monthly-comparison-panel">
         <div className="monthly-comparison-header">
-          <div>
-            <h3>Monthly Income vs Expense</h3>
-            <p>Track income and expense movement month over month.</p>
+        <div>
+          <h3>Monthly Income vs Expense</h3>
+          <p>Track income, expense, and actual monthwise savings.</p>
           </div>
           {hasActiveFilters ? (
             <span className="monthly-comparison-filter-pill">Filtered</span>
@@ -513,8 +604,8 @@ export default function MonthlyComparisonChart({
         <div>
           <h3>Monthly Income vs Expense</h3>
           <p>
-            Starts from the latest month and moves backward, with quick month-to-month
-            filtering when you want a specific range.
+            Starts from the latest month and moves backward, with saving balance
+            and saving rate shown for each month.
           </p>
         </div>
 
@@ -566,11 +657,17 @@ export default function MonthlyComparisonChart({
           <span>Selected expense</span>
           <strong>{formatCurrency(selectedExpenseTotal)}</strong>
         </div>
-        <div className="monthly-comparison-summary-card range">
-          <span>Showing</span>
-          <strong>
+        <div
+          className={`monthly-comparison-summary-card savings ${
+            selectedSavingsTotal < 0 ? "negative" : "positive"
+          }`}
+        >
+          <span>Selected savings</span>
+          <strong>{formatSignedCurrency(selectedSavingsTotal)}</strong>
+          <small>
+            {formatSavingsRate(selectedSavingsRate)} across{" "}
             {selectedMonthKeys.length} {selectedMonthKeys.length === 1 ? "month" : "months"}
-          </strong>
+          </small>
         </div>
       </div>
 

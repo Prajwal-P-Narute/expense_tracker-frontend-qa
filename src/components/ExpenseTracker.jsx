@@ -956,18 +956,26 @@ useEffect(() => {
     return [...monthlyMap.values()]
       .sort((left, right) => left.monthKey.localeCompare(right.monthKey))
       .slice(-6)
-      .map((item) => ({
-        month: new Date(`${item.monthKey}-01T00:00:00`).toLocaleDateString(
-          "en-IN",
-          {
-            month: "short",
-            year: "2-digit",
-          },
-        ),
-        income: item.income,
-        expense: item.expense,
-        balance: item.balance,
-      }));
+      .map((item) => {
+        const savings = item.income - item.expense;
+        const savingsRate =
+          item.income > 0 ? Number(((savings / item.income) * 100).toFixed(1)) : 0;
+
+        return {
+          month: new Date(`${item.monthKey}-01T00:00:00`).toLocaleDateString(
+            "en-IN",
+            {
+              month: "short",
+              year: "2-digit",
+            },
+          ),
+          income: item.income,
+          expense: item.expense,
+          savings,
+          savingsRate,
+          balance: item.balance,
+        };
+      });
   };
 
   const handleExportPDF = async () => {
@@ -1795,7 +1803,7 @@ useEffect(() => {
           </>
         )}
 
-        {isTransactionsView && (
+        {(isTransactionsView || isDashboardView) && (
           <div className="footer">
             <button
               className="export-pdf-fab"

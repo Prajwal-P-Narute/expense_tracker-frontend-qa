@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./AppQuickActions.css";
 
@@ -12,19 +12,53 @@ export default function AppQuickActions({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCompactViewport, setIsCompactViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 640 : false,
+  );
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const syncViewport = () => {
+      setIsCompactViewport(window.innerWidth <= 640);
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname, isCompactViewport]);
 
   if (!visible) {
     return null;
   }
 
   const onDashboard = DASHBOARD_PATHS.has(location.pathname);
+  const openDashboard = () => {
+    navigate("/expense-tracker");
+    setIsMenuOpen(false);
+  };
 
-  return (
-    <div className="app-quick-actions" aria-label="Quick actions">
+  const toggleMode = () => {
+    onToggleDarkMode();
+    setIsMenuOpen(false);
+  };
+
+  const actionButtons = (
+    <>
       <button
         type="button"
         className={`app-quick-action ${onDashboard ? "active" : ""}`}
-        onClick={() => navigate("/expense-tracker")}
+        onClick={openDashboard}
         disabled={onDashboard}
         aria-current={onDashboard ? "page" : undefined}
       >
@@ -36,7 +70,7 @@ export default function AppQuickActions({
         <button
           type="button"
           className="app-quick-action"
-          onClick={onToggleDarkMode}
+          onClick={toggleMode}
           aria-pressed={isDarkMode}
         >
           <i
@@ -50,6 +84,40 @@ export default function AppQuickActions({
           </span>
         </button>
       ) : null}
+    </>
+  );
+
+  if (isCompactViewport) {
+    return (
+      <div
+        className={`app-quick-actions mobile ${isMenuOpen ? "open" : ""}`}
+        aria-label="Quick actions"
+      >
+        {isMenuOpen ? (
+          <div className="app-quick-actions-panel">
+            {actionButtons}
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          className="app-quick-actions-toggle"
+          aria-label={isMenuOpen ? "Close quick actions" : "Open quick actions"}
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((currentValue) => !currentValue)}
+        >
+          <i
+            className={`bi ${isMenuOpen ? "bi-x-lg" : "bi-grid-3x3-gap-fill"}`}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-quick-actions" aria-label="Quick actions">
+      {actionButtons}
     </div>
   );
 }

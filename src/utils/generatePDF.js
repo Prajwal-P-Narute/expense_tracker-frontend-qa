@@ -61,6 +61,12 @@ function fmt(value) {
   return Number(value || 0).toLocaleString("en-IN");
 }
 
+function fmtPercent(value) {
+  const numericValue = Number(value || 0);
+  const prefix = numericValue > 0 ? "+" : "";
+  return `${prefix}${numericValue.toFixed(1)}%`;
+}
+
 function setFill(doc, rgb) {
   doc.setFillColor(...rgb);
 }
@@ -278,10 +284,24 @@ async function buildPage2(doc, data) {
   doc.text("Income", margin + 6, 30.5);
   fillRect(doc, margin + 28, 27, 4, 4, COLORS.expense, 1);
   doc.text("Expense", margin + 34, 30.5);
+  fillRect(doc, margin + 52, 27, 4, 4, COLORS.primary, 1);
+  doc.text("Savings %", margin + 58, 30.5);
 
-  const months = monthlyData.map((item) => item.month);
+  const savingsRates = monthlyData.map((item) =>
+    Number.isFinite(Number(item.savingsRate))
+      ? Number(item.savingsRate)
+      : item.income > 0
+        ? Number((((item.income - item.expense) / item.income) * 100).toFixed(1))
+        : 0,
+  );
+  const months = monthlyData.map((item, index) => [
+    item.month,
+    fmtPercent(savingsRates[index]),
+  ]);
   const incomes = monthlyData.map((item) => item.income);
   const expenses = monthlyData.map((item) => item.expense);
+  const savingsMin = Math.min(...savingsRates, 0);
+  const savingsMax = Math.max(...savingsRates, 0);
 
   const barPng = await chartToBase64(
     "bar",
@@ -302,16 +322,41 @@ async function buildPage2(doc, data) {
           borderRadius: 4,
           barPercentage: 0.7,
         },
+        {
+          type: "line",
+          label: "Savings %",
+          data: savingsRates,
+          yAxisID: "savingsRateAxis",
+          borderColor: "#0C447C",
+          backgroundColor: "rgba(12,68,124,0.16)",
+          borderWidth: 2,
+          tension: 0.35,
+          pointRadius: 3,
+          pointHoverRadius: 3,
+          pointBackgroundColor: "#0C447C",
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 1.2,
+        },
       ],
     },
     {
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 13 } } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
         y: {
           grid: { color: "rgba(200,200,200,0.3)" },
           ticks: {
             font: { size: 11 },
             callback: (value) => `${(value / 1000).toFixed(0)}k`,
+          },
+        },
+        savingsRateAxis: {
+          position: "right",
+          suggestedMin: savingsMin - 10,
+          suggestedMax: savingsMax + 10,
+          grid: { drawOnChartArea: false },
+          ticks: {
+            font: { size: 10 },
+            callback: (value) => `${value}%`,
           },
         },
       },
@@ -374,15 +419,19 @@ async function buildPage2(doc, data) {
     startY: tableY + 4,
     head: [["Month", "Income", "Expense", "Balance", "Savings %"]],
     body: monthlyData.map((item) => {
-      const monthlyMovement = item.income - item.expense;
+      const monthlyMovement = Number(item.savings ?? (item.income - item.expense)) || 0;
       const balance = item.balance || 0;
-      const savingsRate = item.income > 0 ? Math.round((monthlyMovement / item.income) * 100) : 0;
+      const savingsRate = Number.isFinite(Number(item.savingsRate))
+        ? Number(item.savingsRate)
+        : item.income > 0
+          ? Number(((monthlyMovement / item.income) * 100).toFixed(1))
+          : 0;
       return [
         item.month,
         fmt(item.income),
         fmt(item.expense),
         fmt(balance),
-        `${savingsRate}%`,
+        fmtPercent(savingsRate),
       ];
     }),
     styles: { fontSize: 8, cellPadding: 4 },
