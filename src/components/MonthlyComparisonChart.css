@@ -1,0 +1,189 @@
+.monthly-comparison-panel {
+  margin-top: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 142, 218, 0.14), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #e2ebfb;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 24px 50px rgba(76, 142, 218, 0.1);
+}
+
+.monthly-comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.monthly-comparison-header h3 {
+  color: #23335b;
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.monthly-comparison-header p {
+  color: #64748b;
+  max-width: 620px;
+}
+
+.monthly-comparison-header-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monthly-comparison-filter-pill {
+  background: #eef6ff;
+  color: #1d5fc1;
+  border: 1px solid #c9daf8;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.monthly-comparison-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monthly-comparison-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+  color: #5a647a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.monthly-comparison-select {
+  appearance: none;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  color: #23335b;
+  border: 1px solid #dbe7fa;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.monthly-comparison-select:focus {
+  border-color: #4c8eda;
+  box-shadow: 0 0 0 4px rgba(76, 142, 218, 0.16);
+}
+
+.monthly-comparison-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.monthly-comparison-summary-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid #e7eefc;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, #f9fbff 100%);
+}
+
+.monthly-comparison-summary-card span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.monthly-comparison-summary-card strong {
+  color: #23335b;
+  font-size: 20px;
+}
+
+.monthly-comparison-summary-card.income strong {
+  color: #1d5fc1;
+}
+
+.monthly-comparison-summary-card.expense strong {
+  color: #c15321;
+}
+
+.monthly-comparison-chart-wrap {
+  margin-top: 22px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.monthly-comparison-chart-stage {
+  position: relative;
+  min-width: 100%;
+  height: 420px;
+}
+
+.monthly-comparison-chart-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.monthly-comparison-scroll-hint {
+  margin-top: 18px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.monthly-comparison-empty {
+  margin-top: 24px;
+  border: 1px dashed #c9daf8;
+  border-radius: 20px;
+  padding: 28px;
+  text-align: center;
+  color: #64748b;
+  background: linear-gradient(180deg, rgba(238, 246, 255, 0.8) 0%, #ffffff 100%);
+}
+
+@media (max-width: 900px) {
+  .monthly-comparison-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-comparison-header-meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .monthly-comparison-panel {
+    padding: 22px;
+  }
+
+  .monthly-comparison-header h3 {
+    font-size: 21px;
+  }
+
+  .monthly-comparison-controls {
+    width: 100%;
+  }
+
+  .monthly-comparison-select-wrap {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .monthly-comparison-chart-stage {
+    height: 360px;
+  }
+}

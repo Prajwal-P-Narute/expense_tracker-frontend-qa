@@ -1,5 +1,6 @@
 .insights-panel {
-  margin-top: 28px;
+  width: min(100%, 1120px);
+  margin: 28px auto 0;
   background:
     radial-gradient(circle at top right, rgba(67, 97, 238, 0.12), transparent 34%),
     linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
@@ -82,6 +83,8 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
+  width: min(100%, 1024px);
+  margin: 0 auto;
 }
 
 .insights-chart-card,
@@ -439,6 +442,7 @@
 
 @media (max-width: 768px) {
   .insights-panel {
+    width: 100%;
     padding: 20px;
   }
 
@@ -502,8 +506,13 @@
 
 @media (max-width: 640px) {
   .insights-panel {
+    width: 100%;
     padding: 18px;
     border-radius: 22px;
+  }
+
+  .insights-body {
+    width: 100%;
   }
 
   .insights-header {

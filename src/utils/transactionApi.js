@@ -18,6 +18,7 @@ const buildEmptyWorkspaceResponse = () => ({
   totalExpense: 0,
   finalBalance: 0,
   analytics: EMPTY_ANALYTICS,
+  monthlyComparison: [],
 });
 
 const authHeaders = () => ({
@@ -213,6 +214,9 @@ export async function fetchTransactionWorkspace(
       ...data,
       transactions: Array.isArray(data?.transactions) ? data.transactions : [],
       analytics: data?.analytics || EMPTY_ANALYTICS,
+      monthlyComparison: Array.isArray(data?.monthlyComparison)
+        ? data.monthlyComparison
+        : [],
     };
   } catch (error) {
     console.error("Error fetching transaction workspace:", error);

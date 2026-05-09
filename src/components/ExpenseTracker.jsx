@@ -10,6 +10,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import DeleteModal from "./DeleteModal";
 import DashboardInsights from "./DashboardInsights";
+import MonthlyComparisonChart from "./MonthlyComparisonChart";
 import { fetchCategories } from "../utils/categoryApi";
 import { fetchLabels } from "../utils/labelApi";
 import {
@@ -41,6 +42,8 @@ const EMPTY_ANALYTICS = {
   credit: { total: 0, maxAmount: 0, items: [] },
   labels: { total: 0, maxAmount: 0, items: [] },
 };
+
+const EMPTY_MONTHLY_COMPARISON = [];
 
 const normalizeSelectedValues = (values) => {
   if (Array.isArray(values)) {
@@ -135,6 +138,9 @@ const ExpenseTracker = ({
   const [totalExpense, setTotalExpense] = useState(0);
   const [finalBalance, setFinalBalance] = useState(0);
   const [analytics, setAnalytics] = useState(EMPTY_ANALYTICS);
+  const [monthlyComparison, setMonthlyComparison] = useState(
+    EMPTY_MONTHLY_COMPARISON,
+  );
 
   // ── Pagination ────────────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1);
@@ -222,6 +228,7 @@ const ExpenseTracker = ({
       totalExpense,
       finalBalance,
       analytics,
+      monthlyComparison,
       categoryOptions,
       labelMap,
       labelOptions,
@@ -232,6 +239,7 @@ const ExpenseTracker = ({
       currentFilters,
       currentPage,
       finalBalance,
+      monthlyComparison,
       labelMap,
       labelOptions,
       openingBalance,
@@ -307,11 +315,17 @@ const ExpenseTracker = ({
       setTotalExpense(workspaceData.totalExpense ?? 0);
       setFinalBalance(workspaceData.finalBalance ?? 0);
       setAnalytics(workspaceData.analytics || EMPTY_ANALYTICS);
+      setMonthlyComparison(
+        Array.isArray(workspaceData.monthlyComparison)
+          ? workspaceData.monthlyComparison
+          : EMPTY_MONTHLY_COMPARISON,
+      );
     } catch (err) {
       if (!err.message?.includes("Session expired"))
         toast.error("Failed to load transactions.");
       setTransactions([]);
       setAnalytics(EMPTY_ANALYTICS);
+      setMonthlyComparison(EMPTY_MONTHLY_COMPARISON);
     } finally {
       setIsLoadingPage(false);
       setIsInitialLoad(false);
@@ -376,6 +390,11 @@ useEffect(() => {
     setTotalExpense(Number(bootstrapData.totalExpense) || 0);
     setFinalBalance(Number(bootstrapData.finalBalance) || 0);
     setAnalytics(bootstrapData.analytics || EMPTY_ANALYTICS);
+    setMonthlyComparison(
+      Array.isArray(bootstrapData.monthlyComparison)
+        ? bootstrapData.monthlyComparison
+        : EMPTY_MONTHLY_COMPARISON,
+    );
 
     if (Array.isArray(bootstrapData.categoryOptions) && bootstrapData.categoryOptions.length) {
       setCategoryOptions(bootstrapData.categoryOptions);
@@ -1486,6 +1505,10 @@ useEffect(() => {
 
           {isDashboardView ? (
             <>
+              <MonthlyComparisonChart
+                monthlyComparison={monthlyComparison}
+                hasActiveFilters={hasActiveFilters}
+              />
               <DashboardInsights
                 analytics={analytics}
                 hasActiveFilters={hasActiveFilters}

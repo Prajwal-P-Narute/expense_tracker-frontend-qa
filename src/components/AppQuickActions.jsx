@@ -29,7 +29,7 @@ export default function AppQuickActions({
         aria-current={onDashboard ? "page" : undefined}
       >
         <i className="bi bi-speedometer2" aria-hidden="true" />
-        <span>Dashboard</span>
+        <span className="app-quick-action-label">Dashboard</span>
       </button>
 
       {showThemeToggle ? (
@@ -45,7 +45,9 @@ export default function AppQuickActions({
             }`}
             aria-hidden="true"
           />
-          <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
+          <span className="app-quick-action-label">
+            {isDarkMode ? "Light Mode" : "Dark Mode"}
+          </span>
         </button>
       ) : null}
     </div>

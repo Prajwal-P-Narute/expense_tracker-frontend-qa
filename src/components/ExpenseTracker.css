@@ -906,7 +906,8 @@ tr:hover {
   position: absolute;
   top: 56px;
   right: 0;
-  width: 320px;
+  width: min(320px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   background:
     linear-gradient(180deg, var(--surface-card), var(--surface-elevated));
   border-radius: 18px;
@@ -1825,7 +1826,7 @@ tr:hover {
   color: var(--text-primary);
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1120px) {
   .expense-shell .header {
     grid-template-columns: 1fr;
   }
@@ -1833,6 +1834,11 @@ tr:hover {
   .expense-shell .header-right,
   .expense-shell .button-group {
     justify-content: flex-start;
+    width: 100%;
+  }
+
+  .expense-shell .current-month {
+    max-width: 100%;
   }
 
   .expense-shell .dashboard-cta-card {
@@ -1863,6 +1869,7 @@ tr:hover {
 
   .expense-shell .button-group {
     width: 100%;
+    gap: 10px;
   }
 
   .expense-shell .add-btn,
@@ -1875,6 +1882,11 @@ tr:hover {
 @media (max-width: 520px) {
   .expense-shell .header h1 {
     font-size: 2rem;
+  }
+
+  .expense-shell .current-month {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .expense-shell .button-group {
